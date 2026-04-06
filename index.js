@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
-const session = require("express-session");
 const connectDB = require("./db/dbConnect");
+const authMiddleware = require("./middleware/auth");
 require("dotenv").config();
 
 // ── Multer Instances ──────────────────────────────────────────────────────────
@@ -53,30 +53,23 @@ const { GetAdminFeedbacks } = require("./apis/admin/GetFeedbacks");
 const { DashboardStats } = require("./apis/admin/DashboardStats");
 
 // ─────────────────────────────────────────────────────────────────────────────
-
 const app = express();
 const PORT = process.env.PORT || 8000;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET || "gamezone_platform_secret",
-    resave: false,
-    saveUninitialized: true,
-    cookie: { maxAge: 1000 * 60 * 60 * 24 }, // 1 day
-  })
-);
-
-
-app.use(
-  cors({
-    origin: ["http://localhost:3000", "http://localhost:3001", "http://localhost:5173", "http://localhost:5174"],
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE"],
-  })
-);
+app.use(cors({
+  origin: [
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "https://your-frontend.onrender.com", // ← replace with your actual frontend URL
+  ],
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE"],
+}));
 
 // ── Static File Serving ───────────────────────────────────────────────────────
 app.use("/uploads/games", express.static("uploads/games"));
@@ -104,57 +97,43 @@ app.get("/seats/:game_id", GetSeats);
 app.get("/feedbacks", GetFeedbacks);
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  USER APIs (session required)
+//  USER APIs (JWT required)
 // ─────────────────────────────────────────────────────────────────────────────
-app.get("/user/profile", GetProfile);
-app.post("/user/updateProfile", profileUpload.single("profile_image"), UpdateProfile);
-app.post("/user/bookSeat", BookSeat);
-app.get("/user/myBookings", MyBookings);
-app.post("/user/cancelBooking", CancelBooking);
-app.post("/user/genOrderId", GenOrderId);
-app.post("/user/verifyPayment", VerifyPayment);
-app.post("/user/addFeedback", AddFeedback);
+app.get("/user/profile", authMiddleware, GetProfile);
+app.post("/user/updateProfile", authMiddleware, profileUpload.single("profile_image"), UpdateProfile);
+app.post("/user/bookSeat", authMiddleware, BookSeat);
+app.get("/user/myBookings", authMiddleware, MyBookings);
+app.post("/user/cancelBooking", authMiddleware, CancelBooking);
+app.post("/user/genOrderId", authMiddleware, GenOrderId);
+app.post("/user/verifyPayment", authMiddleware, VerifyPayment);
+app.post("/user/addFeedback", authMiddleware, AddFeedback);
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  ADMIN APIs (session required)
+//  ADMIN APIs (JWT required)
 // ─────────────────────────────────────────────────────────────────────────────
-
-// Users
-app.get("/admin/users", GetUsers);
-app.post("/admin/updateUserStatus", UpdateUserStatus);
-
-// Games
-app.post("/admin/addGame", gameUpload.single("image"), AddGame);
-app.post("/admin/updateGame", gameUpload.single("image"), UpdateGame);
-app.get("/admin/deleteGame/:id", DeleteGame);
-app.get("/admin/games", GetAdminGames);
-
-// Slots
-app.post("/admin/addSlot", AddSlot);
-app.post("/admin/updateSlot", UpdateSlot);
-app.get("/admin/deleteSlot/:id", DeleteSlot);
-app.get("/admin/slots", GetAdminSlots);
-
-// Seats
-app.post("/admin/addSeat", AddSeat);
-app.post("/admin/updateSeat", UpdateSeat);
-app.get("/admin/deleteSeat/:id", DeleteSeat);
-app.get("/admin/seats", GetAdminSeats);
-
-// Bookings
-app.get("/admin/bookings", GetBookings);
-app.post("/admin/updateBooking", UpdateBooking);
-
-// Reports
-app.get("/admin/payments", GetPayments);
-app.get("/admin/feedbacks", GetAdminFeedbacks);
-app.get("/admin/dashboardStats", DashboardStats);
-
+app.get("/admin/users", authMiddleware, GetUsers);
+app.post("/admin/updateUserStatus", authMiddleware, UpdateUserStatus);
+app.post("/admin/addGame", authMiddleware, gameUpload.single("image"), AddGame);
+app.post("/admin/updateGame", authMiddleware, gameUpload.single("image"), UpdateGame);
+app.get("/admin/deleteGame/:id", authMiddleware, DeleteGame);
+app.get("/admin/games", authMiddleware, GetAdminGames);
+app.post("/admin/addSlot", authMiddleware, AddSlot);
+app.post("/admin/updateSlot", authMiddleware, UpdateSlot);
+app.get("/admin/deleteSlot/:id", authMiddleware, DeleteSlot);
+app.get("/admin/slots", authMiddleware, GetAdminSlots);
+app.post("/admin/addSeat", authMiddleware, AddSeat);
+app.post("/admin/updateSeat", authMiddleware, UpdateSeat);
+app.get("/admin/deleteSeat/:id", authMiddleware, DeleteSeat);
+app.get("/admin/seats", authMiddleware, GetAdminSeats);
+app.get("/admin/bookings", authMiddleware, GetBookings);
+app.post("/admin/updateBooking", authMiddleware, UpdateBooking);
+app.get("/admin/payments", authMiddleware, GetPayments);
+app.get("/admin/feedbacks", authMiddleware, GetAdminFeedbacks);
+app.get("/admin/dashboardStats", authMiddleware, DashboardStats);
 
 app.get("/", (req, res) => {
   res.send("Welcome to GameX Platform API!");
 });
-
 
 // ─────────────────────────────────────────────────────────────────────────────
 app.listen(PORT, () =>
