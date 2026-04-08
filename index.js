@@ -17,6 +17,9 @@ const { ChangePassword } = require("./apis/common/changePassword");
 // ── Public APIs ───────────────────────────────────────────────────────────────
 const { GetGames } = require("./apis/user/GetGames");
 const { GetGameDetails } = require("./apis/user/GetGameDetails");
+const { GetGameCategories } = require("./apis/user/GetGameCategories");
+const { GetGamePlatforms } = require("./apis/user/GetGamePlatforms");
+const { GetGameTypes } = require("./apis/user/GetGameTypes");
 const { GetSlots } = require("./apis/user/GetSlots");
 const { GetSeats } = require("./apis/user/GetSeats");
 const { GetFeedbacks } = require("./apis/user/GetFeedbacks");
@@ -65,17 +68,15 @@ app.use(cors({
     "http://localhost:3001",
     "http://localhost:5173",
     "http://localhost:5174",
-    "https://your-frontend.onrender.com", // ← replace with your actual frontend URL
+    "https://your-frontend.onrender.com",
   ],
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE"],
 }));
 
-// ── Static File Serving ───────────────────────────────────────────────────────
 app.use("/uploads/games", express.static("uploads/games"));
 app.use("/uploads/profiles", express.static("uploads/profiles"));
 
-// ── DB Connect ────────────────────────────────────────────────────────────────
 connectDB();
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -90,11 +91,14 @@ app.post("/changePassword", ChangePassword);
 // ─────────────────────────────────────────────────────────────────────────────
 //  PUBLIC APIs (no auth required)
 // ─────────────────────────────────────────────────────────────────────────────
-app.get("/games", GetGames);
-app.get("/games/:id", GetGameDetails);
-app.get("/slots/:game_id", GetSlots);
-app.get("/seats/:game_id", GetSeats);
-app.get("/feedbacks", GetFeedbacks);
+app.get("/games", GetGames);                          // all games + filters: ?category= ?platform= ?type= ?min_players= ?max_players= ?age_limit=
+app.get("/games/:id", GetGameDetails);                // single game with slots & seats
+app.get("/gameCategories", GetGameCategories);        // distinct categories list
+app.get("/gamePlatforms", GetGamePlatforms);          // distinct platforms list
+app.get("/gameTypes", GetGameTypes);                  // distinct types list
+app.get("/slots/:game_id", GetSlots);                 // available slots for a game
+app.get("/seats/:game_id", GetSeats);                 // all seats for a game
+app.get("/feedbacks", GetFeedbacks);                  // all feedbacks
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  USER APIs (JWT required)
@@ -135,7 +139,6 @@ app.get("/", (req, res) => {
   res.send("Welcome to GameX Platform API!");
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
 app.listen(PORT, () =>
   console.log(`✅ Game Zone Reservation server started on PORT ${PORT}!`)
 );
